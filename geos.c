@@ -34,6 +34,9 @@
 #include "php_geos.h"
 #include "arginfo.h"
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_void, 0, 0, 0)
+ZEND_END_ARG_INFO()
+
 static ZEND_DECLARE_MODULE_GLOBALS(geos);
 static PHP_GINIT_FUNCTION(geos);
 
@@ -130,19 +133,19 @@ ZEND_GET_MODULE(geos)
 
 static void noticeHandler(const char *fmt, ...)
 {
-    TSRMLS_FETCH();
+
     char message[256];
     va_list args;
     va_start(args, fmt);
     vsnprintf(message, sizeof(message) - 1, fmt, args);
     va_end(args);
 
-    php_error_docref(NULL TSRMLS_CC, E_NOTICE, "%s", message);
+    php_error_docref(NULL, E_NOTICE, "%s", message);
 }
 
 static void errorHandler(const char *fmt, ...)
 {
-    TSRMLS_FETCH();
+
     char message[256];
     va_list args;
     va_start(args, fmt);
@@ -150,8 +153,8 @@ static void errorHandler(const char *fmt, ...)
     va_end(args);
 
     /* TODO: use a GEOSException ? */
-    zend_throw_exception_ex(zend_exception_get_default(TSRMLS_C),
-        1 TSRMLS_CC, "%s", message);
+    zend_throw_exception_ex(zend_exception_get_default(),
+        1, "%s", message);
 
 }
 
@@ -173,15 +176,15 @@ static inline Proxy *php_geos_fetch_object(zend_object *obj) {
 # define Z_GEOS_OBJ_P(zv) (Proxy *)((char *) (Z_OBJ_P(zv)) - XtOffsetOf(Proxy, std))
 #else
 # ifdef Z_OBJ
-#  define Z_GEOS_OBJ_P(zv) (Proxy*)Z_OBJ(*val TSRMLS_CC)
+#  define Z_GEOS_OBJ_P(zv) (Proxy*)Z_OBJ(*val)
 # else
-#  define Z_GEOS_OBJ_P(zv) (Proxy*)zend_object_store_get_object(val TSRMLS_CC)
+#  define Z_GEOS_OBJ_P(zv) (Proxy*)zend_object_store_get_object(val)
 # endif
 #endif
 
 static void
 setRelay(zval* val, void* obj) {
-    TSRMLS_FETCH();
+
 
     Proxy* proxy = Z_GEOS_OBJ_P(val);
 
@@ -190,7 +193,7 @@ setRelay(zval* val, void* obj) {
 
 static inline void *
 getRelay(zval* val, zend_class_entry* ce) {
-    TSRMLS_FETCH();
+
 
     Proxy* proxy = Z_GEOS_OBJ_P(val);
 
@@ -249,16 +252,16 @@ static long getZvalAsDouble(GEOS_PHP_ZVAL val)
 
 static zend_object_value
 Gen_create_obj (zend_class_entry *type,
-    void (*dtor)(GEOS_PHP_DTOR_OBJECT *object TSRMLS_DC),
+    void (*dtor)(GEOS_PHP_DTOR_OBJECT *object),
     zend_object_handlers* handlers)
 {
-    TSRMLS_FETCH();
+
 
 #if PHP_VERSION_ID >= 70000
 
     Proxy *obj = (Proxy *) ecalloc(1, sizeof(Proxy) + zend_object_properties_size(type));
 
-    zend_object_std_init(&obj->std, type TSRMLS_CC);
+    zend_object_std_init(&obj->std, type);
     object_properties_init(&obj->std, type);
 
     obj->std.handlers = handlers;
@@ -285,7 +288,7 @@ Gen_create_obj (zend_class_entry *type,
     object_properties_init(&(obj->std), type);
 #endif
 
-    retval.handle = zend_objects_store_put(obj, NULL, dtor, NULL TSRMLS_CC);
+    retval.handle = zend_objects_store_put(obj, NULL, dtor, NULL);
     retval.handlers = handlers;
 
     return retval;
@@ -586,7 +589,7 @@ static GEOSWKBWriter* Geometry_serializer = 0;
 
 static GEOSWKBWriter* getGeometrySerializer()
 {
-    TSRMLS_FETCH();
+
 
     if ( ! Geometry_serializer ) {
         Geometry_serializer = GEOSWKBWriter_create_r(GEOS_G(handle));
@@ -598,7 +601,7 @@ static GEOSWKBWriter* getGeometrySerializer()
 
 static void delGeometrySerializer()
 {
-    TSRMLS_FETCH();
+
 
     if ( Geometry_serializer ) {
         GEOSWKBWriter_destroy_r(GEOS_G(handle), Geometry_serializer);
@@ -611,7 +614,7 @@ static GEOSWKBReader* Geometry_deserializer = 0;
 
 static GEOSWKBReader* getGeometryDeserializer()
 {
-    TSRMLS_FETCH();
+
 
     if ( ! Geometry_deserializer ) {
         Geometry_deserializer = GEOSWKBReader_create_r(GEOS_G(handle));
@@ -621,7 +624,7 @@ static GEOSWKBReader* getGeometryDeserializer()
 
 static void delGeometryDeserializer()
 {
-    TSRMLS_FETCH();
+
 
     if ( Geometry_deserializer ) {
         GEOSWKBReader_destroy_r(GEOS_G(handle), Geometry_deserializer);
@@ -632,7 +635,7 @@ static void delGeometryDeserializer()
 
 static int
 Geometry_serialize(zval *object, unsigned char **buffer, zend_uint *buf_len,
-        zend_serialize_data *data TSRMLS_DC)
+        zend_serialize_data *data)
 {
     GEOSWKBWriter *serializer;
     GEOSGeometry *geom;
@@ -658,7 +661,7 @@ Geometry_serialize(zval *object, unsigned char **buffer, zend_uint *buf_len,
 
 static int
 Geometry_deserialize(GEOS_PHP_ZVAL object, zend_class_entry *ce, const unsigned char *buf,
-        zend_uint buf_len, zend_unserialize_data *data TSRMLS_DC)
+        zend_uint buf_len, zend_unserialize_data *data)
 {
     GEOSWKBReader* deserializer;
     GEOSGeometry* geom;
@@ -668,7 +671,7 @@ Geometry_deserialize(GEOS_PHP_ZVAL object, zend_class_entry *ce, const unsigned 
 
     /* check zend_class_entry being what we expect! */
     if ( ce != Geometry_ce_ptr ) {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+        php_error_docref(NULL, E_ERROR,
                 "Geometry_deserialize called with unexpected zend_class_entry");
         return FAILURE;
     }
@@ -692,7 +695,7 @@ Geometry_deserialize(GEOS_PHP_ZVAL object, zend_class_entry *ce, const unsigned 
 static void
 dumpGeometry(GEOSGeometry* g, zval* array)
 {
-    TSRMLS_FETCH();
+
     int ngeoms, i;
 
     ngeoms = GEOSGetNumGeometries_r(GEOS_G(handle), g);
@@ -718,7 +721,7 @@ dumpGeometry(GEOSGeometry* g, zval* array)
 
 
 static void
-Geometry_dtor (GEOS_PHP_DTOR_OBJECT *object TSRMLS_DC)
+Geometry_dtor (GEOS_PHP_DTOR_OBJECT *object)
 {
 #if PHP_VERSION_ID < 70000
     Proxy *obj = (Proxy *)object;
@@ -739,7 +742,7 @@ Geometry_dtor (GEOS_PHP_DTOR_OBJECT *object TSRMLS_DC)
 }
 
 static zend_object_value
-Geometry_create_obj (zend_class_entry *type TSRMLS_DC)
+Geometry_create_obj (zend_class_entry *type)
 {
     return Gen_create_obj(type, Geometry_dtor, &Geometry_object_handlers);
 }
@@ -747,7 +750,7 @@ Geometry_create_obj (zend_class_entry *type TSRMLS_DC)
 
 PHP_METHOD(Geometry, __construct)
 {
-    php_error_docref(NULL TSRMLS_CC, E_ERROR,
+    php_error_docref(NULL, E_ERROR,
             "GEOSGeometry can't be constructed using new, check WKTReader");
 
 }
@@ -793,7 +796,7 @@ PHP_METHOD(Geometry, project)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o|b", &zobj,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o|b", &zobj,
             &normalized) == FAILURE) {
         RETURN_NULL();
     }
@@ -818,7 +821,7 @@ PHP_METHOD(Geometry, interpolate)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "d|b",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "d|b",
             &dist, &normalized) == FAILURE) {
         RETURN_NULL();
     }
@@ -878,11 +881,11 @@ PHP_METHOD(Geometry, buffer)
     GEOS_PHP_ZVAL data;
     HashTable *style;
     zend_string *key;
-    ulong index;
+    zend_ulong index;
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "d|a",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "d|a",
             &dist, &style_val) == FAILURE) {
         RETURN_NULL();
     }
@@ -971,11 +974,11 @@ PHP_METHOD(Geometry, offsetCurve)
     GEOS_PHP_ZVAL data;
     HashTable *style;
     zend_string *key;
-    ulong index;
+    zend_ulong index;
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "d|a",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "d|a",
             &dist, &style_val) == FAILURE) {
         RETURN_NULL();
     }
@@ -1039,7 +1042,7 @@ PHP_METHOD(Geometry, intersection)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o", &zobj)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o", &zobj)
             == FAILURE) {
         RETURN_NULL();
     }
@@ -1065,7 +1068,7 @@ PHP_METHOD(Geometry, clipByRect)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "dddd",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "dddd",
             &xmin, &ymin, &xmax, &ymax) == FAILURE) {
         RETURN_NULL();
     }
@@ -1103,7 +1106,7 @@ PHP_METHOD(Geometry, difference)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o", &zobj)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o", &zobj)
             == FAILURE) {
         RETURN_NULL();
     }
@@ -1126,7 +1129,7 @@ PHP_METHOD(Geometry, symDifference)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o", &zobj)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o", &zobj)
             == FAILURE) {
         RETURN_NULL();
     }
@@ -1168,7 +1171,7 @@ PHP_METHOD(Geometry, union)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|o", &zobj)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "|o", &zobj)
             == FAILURE) {
         RETURN_NULL();
     }
@@ -1248,7 +1251,7 @@ PHP_METHOD(Geometry, relate)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o|s",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o|s",
         &zobj, &pat, &patlen) == FAILURE)
     {
         RETURN_NULL();
@@ -1287,7 +1290,7 @@ PHP_METHOD(Geometry, relateBoundaryNodeRule)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ol",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ol",
         &zobj, &bnr) == FAILURE)
     {
         RETURN_NULL();
@@ -1317,7 +1320,7 @@ PHP_METHOD(Geometry, simplify)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "d|b",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "d|b",
             &tolerance, &preserveTopology) == FAILURE) {
         RETURN_NULL();
     }
@@ -1348,7 +1351,7 @@ PHP_METHOD(Geometry, setPrecision)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "d|l",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "d|l",
             &gridSize, &flags) == FAILURE) {
         RETURN_NULL();
     }
@@ -1435,7 +1438,7 @@ PHP_METHOD(Geometry, disjoint)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o", &zobj)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o", &zobj)
             == FAILURE) {
         RETURN_NULL();
     }
@@ -1462,7 +1465,7 @@ PHP_METHOD(Geometry, touches)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o", &zobj)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o", &zobj)
             == FAILURE) {
         RETURN_NULL();
     }
@@ -1489,7 +1492,7 @@ PHP_METHOD(Geometry, intersects)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o", &zobj)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o", &zobj)
             == FAILURE) {
         RETURN_NULL();
     }
@@ -1516,7 +1519,7 @@ PHP_METHOD(Geometry, crosses)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o", &zobj)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o", &zobj)
             == FAILURE) {
         RETURN_NULL();
     }
@@ -1543,7 +1546,7 @@ PHP_METHOD(Geometry, within)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o", &zobj)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o", &zobj)
             == FAILURE) {
         RETURN_NULL();
     }
@@ -1570,7 +1573,7 @@ PHP_METHOD(Geometry, contains)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o", &zobj)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o", &zobj)
             == FAILURE) {
         RETURN_NULL();
     }
@@ -1597,7 +1600,7 @@ PHP_METHOD(Geometry, overlaps)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o", &zobj)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o", &zobj)
             == FAILURE) {
         RETURN_NULL();
     }
@@ -1625,7 +1628,7 @@ PHP_METHOD(Geometry, covers)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o", &zobj)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o", &zobj)
             == FAILURE) {
         RETURN_NULL();
     }
@@ -1654,7 +1657,7 @@ PHP_METHOD(Geometry, coveredBy)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o", &zobj)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o", &zobj)
             == FAILURE) {
         RETURN_NULL();
     }
@@ -1682,7 +1685,7 @@ PHP_METHOD(Geometry, equals)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o",
         &zobj) == FAILURE) {
         RETURN_NULL();
     }
@@ -1711,7 +1714,7 @@ PHP_METHOD(Geometry, equalsExact)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o|d",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o|d",
         &zobj, &tolerance) == FAILURE) {
         RETURN_NULL();
     }
@@ -1761,7 +1764,7 @@ PHP_METHOD(Geometry, checkValidity)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "|l",
         &flags) == FAILURE) {
         RETURN_NULL();
     }
@@ -1934,7 +1937,7 @@ PHP_METHOD(Geometry, setSRID)
 
     geom = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
         &srid) == FAILURE) {
         RETURN_NULL();
     }
@@ -1970,7 +1973,7 @@ PHP_METHOD(Geometry, geometryN)
 
     geom = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
         &num) == FAILURE) {
         RETURN_NULL();
     }
@@ -2069,7 +2072,7 @@ PHP_METHOD(Geometry, interiorRingN)
 
     geom = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
         &num) == FAILURE) {
         RETURN_NULL();
     }
@@ -2167,7 +2170,7 @@ PHP_METHOD(Geometry, pointN)
 
     geom = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
         &num) == FAILURE) {
         RETURN_NULL();
     }
@@ -2262,7 +2265,7 @@ PHP_METHOD(Geometry, distance)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o",
         &zobj) == FAILURE)
     {
         RETURN_NULL();
@@ -2289,7 +2292,7 @@ PHP_METHOD(Geometry, hausdorffDistance)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o",
         &zobj) == FAILURE)
     {
         RETURN_NULL();
@@ -2314,7 +2317,7 @@ PHP_METHOD(Geometry, snapTo)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "od", &zobj,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "od", &zobj,
             &tolerance) == FAILURE) {
         RETURN_NULL();
     }
@@ -2364,7 +2367,7 @@ static zend_class_entry *WKTReader_ce_ptr;
 static zend_object_handlers WKTReader_object_handlers;
 
 static void
-WKTReader_dtor (GEOS_PHP_DTOR_OBJECT *object TSRMLS_DC)
+WKTReader_dtor (GEOS_PHP_DTOR_OBJECT *object)
 {
 #if PHP_VERSION_ID < 70000
     Proxy *obj = (Proxy *)object;
@@ -2386,7 +2389,7 @@ WKTReader_dtor (GEOS_PHP_DTOR_OBJECT *object TSRMLS_DC)
 }
 
 static zend_object_value
-WKTReader_create_obj (zend_class_entry *type TSRMLS_DC)
+WKTReader_create_obj (zend_class_entry *type)
 {
     return Gen_create_obj(type, WKTReader_dtor, &WKTReader_object_handlers);
 }
@@ -2399,7 +2402,7 @@ PHP_METHOD(WKTReader, __construct)
 
     obj = GEOSWKTReader_create_r(GEOS_G(handle));
     if ( ! obj ) {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+        php_error_docref(NULL, E_ERROR,
                 "GEOSWKTReader_create() failed (didn't initGEOS?)");
     }
 
@@ -2417,7 +2420,7 @@ PHP_METHOD(WKTReader, read)
 
     reader = (GEOSWKTReader*)getRelay(getThis(), WKTReader_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(),
 #if PHP_VERSION_ID >= 70000
             "S", &wkt
 #else
@@ -2495,7 +2498,7 @@ static zend_class_entry *WKTWriter_ce_ptr;
 static zend_object_handlers WKTWriter_object_handlers;
 
 static void
-WKTWriter_dtor (GEOS_PHP_DTOR_OBJECT *object TSRMLS_DC)
+WKTWriter_dtor (GEOS_PHP_DTOR_OBJECT *object)
 {
 #if PHP_VERSION_ID < 70000
     Proxy *obj = (Proxy *)object;
@@ -2516,7 +2519,7 @@ WKTWriter_dtor (GEOS_PHP_DTOR_OBJECT *object TSRMLS_DC)
 }
 
 static zend_object_value
-WKTWriter_create_obj (zend_class_entry *type TSRMLS_DC)
+WKTWriter_create_obj (zend_class_entry *type)
 {
     return Gen_create_obj(type, WKTWriter_dtor, &WKTWriter_object_handlers);
 }
@@ -2528,7 +2531,7 @@ PHP_METHOD(WKTWriter, __construct)
 
     obj = GEOSWKTWriter_create_r(GEOS_G(handle));
     if ( ! obj ) {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+        php_error_docref(NULL, E_ERROR,
                 "GEOSWKTWriter_create() failed (didn't initGEOS?)");
     }
 
@@ -2545,7 +2548,7 @@ PHP_METHOD(WKTWriter, write)
 
     writer = (GEOSWKTWriter*)getRelay(getThis(), WKTWriter_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o", &zobj)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o", &zobj)
         == FAILURE)
     {
         RETURN_NULL();
@@ -2572,7 +2575,7 @@ PHP_METHOD(WKTWriter, setTrim)
 
     writer = (GEOSWKTWriter*)getRelay(getThis(), WKTWriter_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "b", &trimval)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "b", &trimval)
         == FAILURE)
     {
         RETURN_NULL();
@@ -2591,7 +2594,7 @@ PHP_METHOD(WKTWriter, setRoundingPrecision)
 
     writer = (GEOSWKTWriter*)getRelay(getThis(), WKTWriter_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &prec)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &prec)
         == FAILURE)
     {
         RETURN_NULL();
@@ -2612,7 +2615,7 @@ PHP_METHOD(WKTWriter, setOutputDimension)
 
     writer = (GEOSWKTWriter*)getRelay(getThis(), WKTWriter_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &dim)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &dim)
         == FAILURE)
     {
         RETURN_NULL();
@@ -2648,7 +2651,7 @@ PHP_METHOD(WKTWriter, setOld3D)
 
     writer = (GEOSWKTWriter*)getRelay(getThis(), WKTWriter_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "b", &bval)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "b", &bval)
         == FAILURE)
     {
         RETURN_NULL();
@@ -2689,7 +2692,7 @@ static zend_class_entry *WKBWriter_ce_ptr;
 static zend_object_handlers WKBWriter_object_handlers;
 
 static void
-WKBWriter_dtor (GEOS_PHP_DTOR_OBJECT *object TSRMLS_DC)
+WKBWriter_dtor (GEOS_PHP_DTOR_OBJECT *object)
 {
 #if PHP_VERSION_ID < 70000
     Proxy *obj = (Proxy *)object;
@@ -2710,7 +2713,7 @@ WKBWriter_dtor (GEOS_PHP_DTOR_OBJECT *object TSRMLS_DC)
 }
 
 static zend_object_value
-WKBWriter_create_obj (zend_class_entry *type TSRMLS_DC)
+WKBWriter_create_obj (zend_class_entry *type)
 {
     return Gen_create_obj(type, WKBWriter_dtor, &WKBWriter_object_handlers);
 }
@@ -2725,7 +2728,7 @@ PHP_METHOD(WKBWriter, __construct)
 
     obj = GEOSWKBWriter_create_r(GEOS_G(handle));
     if ( ! obj ) {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+        php_error_docref(NULL, E_ERROR,
                 "GEOSWKBWriter_create() failed (didn't initGEOS?)");
     }
 
@@ -2757,7 +2760,7 @@ PHP_METHOD(WKBWriter, setOutputDimension)
 
     writer = (GEOSWKBWriter*)getRelay(getThis(), WKBWriter_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &dim)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &dim)
         == FAILURE)
     {
         RETURN_NULL();
@@ -2781,7 +2784,7 @@ PHP_METHOD(WKBWriter, write)
 
     writer = (GEOSWKBWriter*)getRelay(getThis(), WKBWriter_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o", &zobj)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o", &zobj)
         == FAILURE)
     {
         RETURN_NULL();
@@ -2813,7 +2816,7 @@ PHP_METHOD(WKBWriter, writeHEX)
 
     writer = (GEOSWKBWriter*)getRelay(getThis(), WKBWriter_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o", &zobj)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o", &zobj)
         == FAILURE)
     {
         RETURN_NULL();
@@ -2856,7 +2859,7 @@ PHP_METHOD(WKBWriter, setByteOrder)
 
     writer = (GEOSWKBWriter*)getRelay(getThis(), WKBWriter_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &dim)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &dim)
         == FAILURE)
     {
         RETURN_NULL();
@@ -2894,7 +2897,7 @@ PHP_METHOD(WKBWriter, setIncludeSRID)
 
     writer = (GEOSWKBWriter*)getRelay(getThis(), WKBWriter_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "b", &incVal)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "b", &incVal)
         == FAILURE)
     {
         RETURN_NULL();
@@ -2922,7 +2925,7 @@ static zend_class_entry *WKBReader_ce_ptr;
 static zend_object_handlers WKBReader_object_handlers;
 
 static void
-WKBReader_dtor (GEOS_PHP_DTOR_OBJECT *object TSRMLS_DC)
+WKBReader_dtor (GEOS_PHP_DTOR_OBJECT *object)
 {
 #if PHP_VERSION_ID < 70000
     Proxy *obj = (Proxy *)object;
@@ -2943,7 +2946,7 @@ WKBReader_dtor (GEOS_PHP_DTOR_OBJECT *object TSRMLS_DC)
 }
 
 static zend_object_value
-WKBReader_create_obj (zend_class_entry *type TSRMLS_DC)
+WKBReader_create_obj (zend_class_entry *type)
 {
     return Gen_create_obj(type, WKBReader_dtor, &WKBReader_object_handlers);
 }
@@ -2956,7 +2959,7 @@ PHP_METHOD(WKBReader, __construct)
 
     obj = GEOSWKBReader_create_r(GEOS_G(handle));
     if ( ! obj ) {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+        php_error_docref(NULL, E_ERROR,
                 "GEOSWKBReader_create() failed (didn't initGEOS?)");
     }
 
@@ -2972,7 +2975,7 @@ PHP_METHOD(WKBReader, read)
 
     reader = (GEOSWKBReader*)getRelay(getThis(), WKBReader_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(),
 #if PHP_VERSION_ID >= 70000
             "S", &wkb
 #else
@@ -3010,7 +3013,7 @@ PHP_METHOD(WKBReader, readHEX)
 
     reader = (GEOSWKBReader*)getRelay(getThis(), WKBReader_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
         &wkb, &wkblen) == FAILURE)
     {
         RETURN_NULL();
@@ -3073,7 +3076,7 @@ PHP_FUNCTION(GEOSPolygonize)
     zval *array_elem;
     zval *zobj;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o", &zobj)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o", &zobj)
         == FAILURE)
     {
         RETURN_NULL();
@@ -3121,7 +3124,7 @@ PHP_FUNCTION(GEOSLineMerge)
     GEOSGeometry *geom_out;
     zval *zobj;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o", &zobj)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "o", &zobj)
         == FAILURE)
     {
         RETURN_NULL();
@@ -3148,7 +3151,7 @@ PHP_FUNCTION(GEOSSharedPaths)
     GEOSGeometry *geom_out;
     zval *zobj1, *zobj2;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "oo", &zobj1, &zobj2)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "oo", &zobj1, &zobj2)
         == FAILURE)
     {
         RETURN_NULL();
@@ -3186,7 +3189,7 @@ PHP_METHOD(Geometry, delaunayTriangulation)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|db",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "|db",
             &tolerance, &edgeonly) == FAILURE) {
         RETURN_NULL();
     }
@@ -3226,7 +3229,7 @@ PHP_METHOD(Geometry, voronoiDiagram)
 
     this = (GEOSGeometry*)getRelay(getThis(), Geometry_ce_ptr);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|dbo",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "|dbo",
             &tolerance, &edgeonly, &zobj) == FAILURE) {
         RETURN_NULL();
     }
@@ -3259,7 +3262,7 @@ PHP_FUNCTION(GEOSRelateMatch)
     int ret;
     zend_bool retBool;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss",
         &mat, &matlen, &pat, &patlen) == FAILURE)
     {
         RETURN_NULL();
@@ -3283,7 +3286,7 @@ PHP_MINIT_FUNCTION(geos)
 
     /* WKTReader */
     INIT_CLASS_ENTRY(ce, "GEOSWKTReader", WKTReader_methods);
-    WKTReader_ce_ptr = zend_register_internal_class(&ce TSRMLS_CC);
+    WKTReader_ce_ptr = zend_register_internal_class(&ce);
     WKTReader_ce_ptr->create_object = WKTReader_create_obj;
     memcpy(&WKTReader_object_handlers,
         zend_get_std_object_handlers(), sizeof(zend_object_handlers));
@@ -3295,7 +3298,7 @@ PHP_MINIT_FUNCTION(geos)
 
     /* WKTWriter */
     INIT_CLASS_ENTRY(ce, "GEOSWKTWriter", WKTWriter_methods);
-    WKTWriter_ce_ptr = zend_register_internal_class(&ce TSRMLS_CC);
+    WKTWriter_ce_ptr = zend_register_internal_class(&ce);
     WKTWriter_ce_ptr->create_object = WKTWriter_create_obj;
     memcpy(&WKTWriter_object_handlers,
         zend_get_std_object_handlers(), sizeof(zend_object_handlers));
@@ -3307,7 +3310,7 @@ PHP_MINIT_FUNCTION(geos)
 
     /* Geometry */
     INIT_CLASS_ENTRY(ce, "GEOSGeometry", Geometry_methods);
-    Geometry_ce_ptr = zend_register_internal_class(&ce TSRMLS_CC);
+    Geometry_ce_ptr = zend_register_internal_class(&ce);
     Geometry_ce_ptr->create_object = Geometry_create_obj;
     memcpy(&Geometry_object_handlers,
         zend_get_std_object_handlers(), sizeof(zend_object_handlers));
@@ -3322,7 +3325,7 @@ PHP_MINIT_FUNCTION(geos)
 
     /* WKBWriter */
     INIT_CLASS_ENTRY(ce, "GEOSWKBWriter", WKBWriter_methods);
-    WKBWriter_ce_ptr = zend_register_internal_class(&ce TSRMLS_CC);
+    WKBWriter_ce_ptr = zend_register_internal_class(&ce);
     WKBWriter_ce_ptr->create_object = WKBWriter_create_obj;
     memcpy(&WKBWriter_object_handlers,
         zend_get_std_object_handlers(), sizeof(zend_object_handlers));
@@ -3334,7 +3337,7 @@ PHP_MINIT_FUNCTION(geos)
 
     /* WKBReader */
     INIT_CLASS_ENTRY(ce, "GEOSWKBReader", WKBReader_methods);
-    WKBReader_ce_ptr = zend_register_internal_class(&ce TSRMLS_CC);
+    WKBReader_ce_ptr = zend_register_internal_class(&ce);
     WKBReader_ce_ptr->create_object = WKBReader_create_obj;
     memcpy(&WKBReader_object_handlers,
         zend_get_std_object_handlers(), sizeof(zend_object_handlers));
